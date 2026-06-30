@@ -1,0 +1,201 @@
+= Cartographie du SI actuel (as is) : M. Traiteur
+Anaïs SAÏ, Anthony PINOT, Florian MARCOT
+:revdate: 28/06/2026
+:toc: left
+:toclevels: 2
+:sectnums:
+:icons: font
+
+[.lead]
+*Projet* : Dossier d'analyse du SI, stratégie d'extension d'un réseau de franchise traiteur +
+*Trio* : Anaïs SAÏ, Anthony PINOT, Florian MARCOT (Promotion 2025-D12) +
+*Livrable* : Jour 3, cartographie du SI existant
+
+== Objectif et périmètre
+
+Cette cartographie représente le système d'information existant de M. Traiteur,
+réseau de franchise composé de 3 magasins propres et 25 franchisés, pour 230 employés.
+Elle sert de base au diagnostic SWOT et à la définition de la cible.
+
+Le SI est décrit selon les quatre couches d'urbanisation : métier, fonctionnelle,
+applicative et technique.
+
+[NOTE]
+====
+Les éléments marqués *hyp.* sont des hypothèses de travail qui comblent les zones
+non précisées par l'énoncé. Ils restent à confirmer auprès du client.
+====
+
+== Légende des flux
+
+Une cartographie SI distingue la nature des flux. La convention retenue est la suivante.
+
+[cols="1,3", options="header"]
+|===
+| Type de trait | Signification
+
+| Trait plein épais
+| Flux d'information applicatif, donnée échangée entre composants du SI
+
+| Trait pointillé
+| Flux différé ou batch, non temps réel
+
+| Trait plein orange
+| Relation contractuelle : hébergement ou infogérance
+
+| Trait plein
+| Flux physique : livraison de marchandises, retrait en magasin
+|===
+
+== Couche métier (processus)
+
+Vue des grands processus métier et des acteurs qui les portent.
+
+[mermaid]
+....
+flowchart TD
+    classDef acteur fill:#e8eef7,stroke:#33558b,color:#1a2b4a;
+    classDef proc fill:#ffffff,stroke:#5a5a5a,color:#222;
+
+    CLI([Client final]):::acteur
+    FRA([Franchisé et personnel]):::acteur
+    SIE([Siège M. Traiteur]):::acteur
+    ACH([Acheteurs x2]):::acteur
+    JEL([Je livre et centrale d'achats]):::acteur
+
+    P1[Prise de commande<br/>tel, web, app]:::proc
+    P2[Préparation des plats]:::proc
+    P3[Encaissement caisse et TPE]:::proc
+    P4[Approvisionnement produits frais<br/>franchisé vers acheteurs vers Je livre]:::proc
+    P5[Livraison produits frais<br/>2x par semaine]:::proc
+    P6[RH, compta, marketing<br/>et veille qualité centralisées]:::proc
+
+    CLI --> P1 --> P2 --> P3
+    FRA --> P2
+    FRA --> P4 --> ACH --> JEL --> P5 --> FRA
+    SIE --> P6
+    SIE --> ACH
+....
+
+Processus identifiés : prise de commande, préparation, encaissement,
+approvisionnement, livraison des produits frais deux fois par semaine et fonctions
+support assurées par le siège.
+
+== Couche applicative (composants et flux)
+
+Vue des applications du SI et des flux qui les relient.
+
+[mermaid]
+....
+flowchart LR
+classDef acteur fill:#eef2ff,stroke:#818cf8,color:#1a2b4a;
+classDef app fill:#ffffff,stroke:#444,color:#222,stroke-width:1.5px;
+classDef presta fill:#fff7ed,stroke:#fb923c,color:#5a4410;
+classDef hyp fill:#fefce8,stroke:#facc15,color:#5a4410,stroke-dasharray:4 3;
+
+    CLI([Client final]):::acteur
+    FRA([Franchisé]):::acteur
+
+    subgraph SI[SI M. Traiteur]
+        direction LR
+        subgraph ZF[Zone franchisé]
+            direction TB
+            WEB[Site web et app mobile<br/>commande client]:::app
+            APPF[Application dédiée<br/>franchisé]:::app
+            CAI[Système de caisse<br/>unifié]:::app
+        end
+        subgraph ZS[Zone siège]
+            direction TB
+            ERP[ERP infogéré<br/>RH, compta, marketing]:::app
+            CAT[Back-office<br/>catalogue plats]:::hyp
+        end
+    end
+
+    HEB[Hébergeur mutualisé<br/>site et app]:::presta
+    EDI[Éditeur ERP<br/>infogérance]:::presta
+    JEL[Je livre<br/>logistique et centrale d'achats]:::presta
+    TPE[TPE bancaire]:::presta
+    BAN[Banque partenaire]:::presta
+
+    CLI ==>|commande web, app, tel| WEB
+    FRA ==>|consultation commande| APPF
+    WEB ==>|transmission commande| APPF
+    CAT -.->|publication carte ?| WEB
+    CAI -.->|Encaissements batch nocturne| ERP
+
+    CLI -->|paiement en magasin| TPE
+    TPE -->|flux interbancaire| BAN
+    TPE ==>|transmission encaissement| CAI
+
+    HEB -->|hébergement| WEB
+    EDI -->|infogérance| ERP
+
+    JEL -->|livraison 2x par semaine| FRA
+    JEL -.->|Met à jour ?| APPF
+
+    linkStyle 7 stroke:#fb923c,fill:none
+    linkStyle 8 stroke:#fb923c,fill:none
+....
+
+=== Lecture de la couche applicative
+
+[cols="2,3,1", options="header"]
+|===
+| Application | Rôle | Statut
+
+| ERP infogéré
+| RH, comptabilité, marketing, veille qualité
+| À remplacer
+
+| Système de caisse unifié
+| Encaissement et remontée des ventes en batch nocturne
+| Maintenu
+
+| Site web et app mobile
+| Prise de commande client, mutualisé sur le réseau
+| Maintenu
+
+| Application dédiée franchisé
+| Consultation des commandes
+| Maintenu
+
+| Back-office catalogue (hyp.)
+| Gestion de la carte, environ 30 plats en rotation
+| À clarifier
+
+| TPE bancaire
+| Encaissement carte, banque imposée
+| Maintenu
+|===
+
+=== Points de friction
+
+* Remontée en batch nocturne de la caisse vers l'ERP, sans données temps réel.
+* Dépendance à un ERP infogéré chez un éditeur qui n'innove plus.
+* Dépendance logistique à Je livre, sans antenne hors région.
+* Hébergement mutualisé du site et de l'app, point unique pour tout le réseau.
+
+== Couche technique (infrastructure)
+
+[cols="2,3", options="header"]
+|===
+| Composant | Hébergement et infrastructure
+
+| ERP | Infogéré et hébergé chez l'éditeur (externe)
+| Site web et app | Hébergement mutualisé externe
+| Caisses | Équipements locaux chez chaque franchisé, synchronisation nocturne vers l'ERP
+| Réseau | Pas d'architecture temps réel, synchronisation en batch nocturne
+| Sécurité | Non décrite dans l'énoncé, point à instruire (RGPD, droits par rôle)
+|===
+
+== Synthèse
+
+La cartographie actuelle révèle un SI homogène mais cloisonné et différé.
+
+. Les flux critiques ne sont pas en temps réel, les encaissements remontent en batch, ce qui limite le pilotage.
+. Deux dépendances externes fortes pèsent sur le SI : l'ERP infogéré et la logistique mono-régionale.
+. Des processus attendus par la stratégie sont absents : livraison à domicile, click and collect rapide, pilotage décisionnel et facturation au pourcentage du CA.
+
+Ces constats justifient les axes de la cartographie cible : découplage de l'ERP,
+passage en temps quasi réel des flux de vente, ouverture des interfaces pour
+intégrer plusieurs prestataires logistiques et la livraison à domicile.
